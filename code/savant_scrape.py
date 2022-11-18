@@ -13,7 +13,7 @@ def scrape_savant():
     seasons = []
     for season in range(2015, 2023):
         seasons.append(pb.statcast(start_dt=f'{season}-01-01', end_dt=f'{season}-12-31'))
-    pd.concat(seasons).to_csv('savant_data/raw.csv', index=False)
+    pd.concat(seasons).to_csv('../data/raw/statcast/statcastraw.csv', index=False)
 
 def pco(x, y, h):
     if np.abs(np.arctan2(x, y)) <= np.pi / 12:
@@ -37,10 +37,10 @@ def agg_stat(df, col, group, rate=False):
         agg_df = agg_df.rename({col: col + '/BBE' if col in ['Weak', 'Topped', 'Under', 'FlareBurner', 'SolidContact', 'Barrel'] else col + '%' for col in agg_df.columns}, axis=1)
     return agg_df
 
-def main(scrape=False):
+def main(scrape=True):
     if scrape:
         scrape_savant()
-    df = pd.read_csv('savant_data/raw/raw.csv', dtype={'PitchType': 'object', 'PitchSpeed': 'float64', 'ReleasePosHorizontal': 'float64', 'ReleasePosVertical': 'float64', 'BatterID': 'int64', 'PitcherID': 'int64', 'Play': 'object', 'Result': 'object', 'Zone': 'float64', 'BatterHandedness': 'object', 'PitcherHandedness': 'object', 'BBType': 'object', 'Balls': 'int64', 'Strikes': 'int64', 'Season': 'int64', 'PitchMovHorizontal': 'float64', 'PitchMovVertical': 'float64', 'PitchLocHorizontal': 'float64', 'PitchLocVertical': 'float64', 'HitLocX': 'float64', 'HitLocY': 'float64', 'ReleaseVelX': 'float64', 'ReleaseVelY': 'float64', 'ReleaseVelZ': 'float64', 'ReleaseAccX': 'float64', 'ReleaseAccY': 'float64', 'ReleaseAccZ': 'float64', 'SZTop': 'float64', 'SZBot': 'float64', 'BBDistance': 'float64', 'EV': 'float64', 'LA': 'float64', 'PitchSpeedAdjusted': 'float64', 'SpinRate': 'float64', 'Extension': 'float64', 'xBA': 'float64', 'xwOBA': 'float64', 'ContactQuality': 'float64', 'PANumber': 'int64', 'PitchOfPA': 'int64', 'SpinAxis': 'float64', 'PitcherTeam': 'object', 'BatterTeam': 'object'})
+    df = pd.read_csv('../data/raw/statcast/statcastraw.csv')
     while df.isin([pd.NA]).any(axis=None):
         df = df.replace({pd.NA: np.nan})
     df = df[df['game_type'] == 'R'].reset_index(drop=True)
@@ -59,7 +59,7 @@ def main(scrape=False):
     df['PCO'] = df.apply(lambda x: pco(x['hc_x'], x['hc_y'], x['stand']), axis=1)
     df = df.drop(['game_date', 'player_name', 'spin_dir', 'spin_rate_deprecated', 'break_angle_deprecated', 'break_length_deprecated', 'des', 'game_type', 'home_team', 'away_team', 'type', 'hit_location', 'on_3b', 'on_2b', 'on_1b', 'outs_when_up', 'inning', 'inning_topbot', 'tfs_deprecated', 'tfs_zulu_deprecated', 'fielder_2', 'umpire', 'sv_id', 'pitcher.1', 'fielder_2.1', 'fielder_3', 'fielder_4', 'fielder_5', 'fielder_6', 'fielder_7', 'fielder_8', 'fielder_9', 'release_pos_y', 'woba_value', 'woba_denom', 'babip_value', 'iso_value', 'pitch_name', 'home_score', 'away_score', 'bat_score', 'fld_score', 'post_away_score', 'post_home_score', 'post_bat_score', 'post_fld_score', 'if_fielding_alignment', 'of_fielding_alignment', 'delta_home_win_exp', 'delta_run_exp', 'game_pk', 'vx0', 'vy0', 'vz0', 'ax', 'ay', 'az'], axis=1)
     df = df.rename({'pitch_type': 'PitchType', 'release_speed': 'PitchSpeed', 'release_pos_x': 'ReleasePosHorizontal', 'release_pos_z': 'ReleasePosVertical', 'batter': 'BatterID', 'pitcher': 'PitcherID', 'events': 'Play', 'description': 'Result', 'zone': 'Zone', 'stand': 'BatterHandedness', 'p_throws': 'PitcherHandedness', 'type': 'BallStrike', 'bb_type': 'BBType', 'balls': 'Balls', 'strikes': 'Strikes', 'game_year': 'Season', 'pfx_x': 'PitchMovHorizontal', 'pfx_z': 'PitchMovVertical', 'plate_x': 'PitchLocHorizontal', 'plate_z': 'PitchLocVertical', 'hc_x': 'HitLocX', 'hc_y': 'HitLocY', 'sz_top': 'SZTop', 'sz_bot': 'SZBot', 'hit_distance_sc': 'BBDistance', 'launch_speed': 'EV', 'launch_angle': 'LA', 'effective_speed': 'PitchSpeedAdjusted', 'release_spin_rate': 'SpinRate', 'release_extension': 'Extension', 'estimated_ba_using_speedangle': 'xBA', 'estimated_woba_using_speedangle': 'xwOBAcon', 'launch_speed_angle': 'ContactQuality', 'at_bat_number': 'PANumber', 'pitch_number': 'PitchOfPA', 'spin_axis': 'SpinAxis'}, axis=1)
-    df.to_csv('savant_data/cleaned/statcastpitchescleaned.csv', index=False)
+    df.to_csv('../data/statcast/cleaned/statcastpitchescleaned.csv', index=False)
 
     for p in ['Batter', 'Pitcher']:
         pgroup = [f'{p}ID', 'Season', f'{p}Team']
@@ -67,7 +67,7 @@ def main(scrape=False):
         for stat in ['BBType', 'PCO', 'ContactQuality']:
             agg_dfs.append(agg_stat(df, stat, pgroup))
         agg_dfs.append(df.groupby(pgroup)['xwOBAcon'].mean().to_frame())
-        pd.concat(agg_dfs, axis=1).to_csv(f"../data/statcast/cleaned/{'batting' if p == 'Batter' else 'pitching'}/statcast{'batting' if p == 'Batter' else 'pitching'}cleaned.csv")
+        pd.concat(agg_dfs, axis=1).to_csv(f"../data/statcast/cleaned/statcast{'batting' if p == 'Batter' else 'pitching'}/statcast{'batting' if p == 'Batter' else 'pitching'}cleaned.csv")
 
 
 if __name__ == '__main__':
