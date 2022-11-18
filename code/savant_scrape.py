@@ -67,7 +67,7 @@ def main(scrape=False):
         for stat in ['BBType', 'PCO', 'ContactQuality']:
             agg_dfs.append(agg_stat(df, stat, pgroup))
         agg_dfs.append(df.groupby(pgroup)['xwOBAcon'].mean().to_frame())
-        pd.concat(agg_dfs, axis=1).reset_index().to_csv(f"../data/statcast/cleaned/{'batting' if p == 'Batter' else 'pitching'}/statcast{'batting' if p == 'Batter' else 'pitching'}cleaned.csv", index=False)
+        pd.concat(agg_dfs, axis=1).to_csv(f"../data/statcast/cleaned/{'batting' if p == 'Batter' else 'pitching'}/statcast{'batting' if p == 'Batter' else 'pitching'}cleaned.csv")
 
 
 if __name__ == '__main__':
