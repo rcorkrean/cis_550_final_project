@@ -7,7 +7,7 @@ def percent_to_decimal(df):
 
 def format_market_value(df):
     for col in [col for col in df.columns.to_list() if df[col].dtype == 'object' and df[col].str.contains(r'\$').any()]:
-        df[col] = (df['DollarMV'].str.replace(r'^\(\$', '-', regex=True).str.strip(')$').astype('float64') * 10e6).astype('int64')
+        df[col] = (df[col].str.replace(r'^\(\$', '-', regex=True).str.strip(')$').astype('float64') * 10e6).astype('int64')
     return df
 
 def team_abbreviator(df):
