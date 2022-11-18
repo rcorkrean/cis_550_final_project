@@ -9,11 +9,10 @@ description_dict = {'hit_into_play': 'InPlay', 'ball': 'BallCalled', 'called_str
 bb_type_dict = {'fly_ball': 'FB', 'line_drive': 'LD', 'ground_ball': 'GB', 'popup': 'IFFB'}
 cq_dict = {1: 'Weak', 2: 'Topped', 3: 'Under', 4: 'FlareBurner', 5: 'SolidContact', 6: 'Barrel'}
 
-def scrape_savant():
-    seasons = []
-    for season in range(2015, 2023):
-        seasons.append(pb.statcast(start_dt=f'{season}-01-01', end_dt=f'{season}-12-31'))
-    pd.concat(seasons).to_csv('../data/raw/statcast/statcastraw.csv', index=False)
+def scrape_savant(save=True):
+    df = pb.statcast(start_dt='2015-01-01', end_dt='2022-12-31')
+    df.to_csv('../data/raw/statcast/statcastraw.csv', index=False)
+    return df
 
 def pco(x, y, h):
     if np.abs(np.arctan2(x, y)) <= np.pi / 12:
@@ -37,10 +36,11 @@ def agg_stat(df, col, group, rate=False):
         agg_df = agg_df.rename({col: col + '/BBE' if col in ['Weak', 'Topped', 'Under', 'FlareBurner', 'SolidContact', 'Barrel'] else col + '%' for col in agg_df.columns}, axis=1)
     return agg_df
 
-def main(scrape=True):
+def main(scrape=True, save=True):
     if scrape:
-        scrape_savant()
-    df = pd.read_csv('../data/raw/statcast/statcastraw.csv')
+        df = scrape_savant(save=save)
+    else:
+        df = pd.read_csv('../data/raw/statcast/statcastraw.csv')
     while df.isin([pd.NA]).any(axis=None):
         df = df.replace({pd.NA: np.nan})
     df = df[df['game_type'] == 'R'].reset_index(drop=True)
