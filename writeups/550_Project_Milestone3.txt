@@ -1,0 +1,54 @@
+******************************
+* QUERIES/DESCRIPTIONS:
+******************************
+
+
+1. Find the proportion of pitches that a particular pitcher ('First Last') throws in each zone. 
+
+WITH tmp(Zone, pitch_count)
+    AS (SELECT Zone, COUNT(pitch_id)
+        FROM Pitches
+        WHERE player_ID = (SELECT PlayerID
+                           FROM Players
+                           WHERE Name = 'First Last')
+        GROUP BY zone)
+SELECT Zone, pitch_count / SUM(pitch_count) as zone_proportion
+FROM tmp
+ORDER BY pitch_count / SUM(pitch_count)
+
+
+
+2. Find all of the pitch types that a particular pitcher ('First Last') throws and their proportions
+   in the 2022 season. 
+
+WITH tmp(Type, pitch_count)
+    AS (SELECT Type, COUNT(pitch_id)
+        FROM Pitches
+        WHERE player_ID = (SELECT PlayerID
+                           FROM Players
+                           WHERE Name = 'First Last')
+              AND Season = '2022'
+        GROUP BY Type)
+SELECT Type, pitch_count / SUM(pitch_count) as pitch_type_proportion
+FROM tmp
+ORDER BY pitch_count / SUM(pitch_count)
+
+
+
+3. Compare a particular team's pitchers based on their earned run average (ERA).
+
+SELECT p.Name, p2.EarnedRunAverage
+FROM Players p JOIN Pitchers p2 ON p.PlayerID = p2.playerID
+WHERE pi.Team = 'PHI'
+ORDER BY p2.EarnedRunAverage DESC
+
+
+
+
+
+
+
+
+******************************
+* CREDENTIALS
+******************************
