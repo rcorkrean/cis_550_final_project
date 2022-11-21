@@ -50,5 +50,16 @@ ORDER BY p2.EarnedRunAverage DESC
 
 
 ******************************
-* CREDENTIALS
+* DATABASE CREDENTIALS
 ******************************
+
+username: 
+host:
+port:
+password:
+
+
+
+
+
+
