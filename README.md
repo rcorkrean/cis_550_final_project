@@ -1,10 +1,16 @@
-# cis_550_final_project
+# CIS 5500 Fall 2022 Final Project
 Let’s play ball!
 
-##Project Description
+### Team Members
+* Ryan Corkean 
+* Iris Gallo
+* Min Kim
+* Jeremy Kogan
+
+## Project Description
 A baseball API that aggregates and curates statistics from **Baseball Savant** and **FanGraphs**, two websites known for their comprehensive stats and analytics, to create a streamlined and flexible user experience. Features include a series of customizable leaderboards, individual player pages, and engaging visuals, such as a strike zone heat map for batters/pitchers, a spray chart for batters, and a pitch arsenal graphic for pitchers. 
 
-###Directories
+## Directories
 
 **code**: Contains the cleaned FanGraphs and Baseball Savant data
 
