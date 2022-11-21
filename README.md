@@ -16,5 +16,5 @@ A baseball API that aggregates and curates statistics from **Baseball Savant** a
 
 **data**: Contains the raw FanGraphs CSVs for batters and pitchers, along with the skeleton of the data-cleaning script.
 
-**writeups**: Contains the project proposal (milestone 1), the project outline (milestone), and the file containing a list of 10 SQL queries and instructions for accessing the database (milestone 3).
+**writeups**: Contains the project proposal (milestone 1), the project outline (milestone 2), and the file containing a list of 10 SQL queries and instructions for accessing the database (milestone 3).
 
