@@ -1,4 +1,14 @@
 # cis_550_final_project
 Let’s play ball!
 
-Currently in the repository are the raw FanGraphs CSVs for batters and pitchers, along with the skeleton of the data-cleaning script. Next up: Baseball Savant pitch data!
+##Project Description
+A baseball API that aggregates and curates statistics from **Baseball Savant** and **FanGraphs**, two websites known for their comprehensive stats and analytics, to create a streamlined and flexible user experience. Features include a series of customizable leaderboards, individual player pages, and engaging visuals, such as a strike zone heat map for batters/pitchers, a spray chart for batters, and a pitch arsenal graphic for pitchers. 
+
+###Directories
+
+**code**: Contains the cleaned FanGraphs and Baseball Savant data
+
+**data**: Contains the raw FanGraphs CSVs for batters and pitchers, along with the skeleton of the data-cleaning script.
+
+**writeups**: Contains the project proposal (milestone 1), the project outline (milestone), and the file containing a list of 10 SQL queries and instructions for accessing the database (milestone 3).
+
