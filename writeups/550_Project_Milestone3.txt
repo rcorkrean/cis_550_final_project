@@ -12,7 +12,7 @@ ORDER BY SUBSTRING_INDEX(Name, ' ', -1), SUBSTRING_INDEX(Name, ' ', 1);
 That's nearly 1,500 players! Some great, some ... well, the minor leagues exist for a reason.
 
 
-2. For the 2022 season, let's get some simple (position) player statistics. Players that played on multiple teams in 2022 (e.g., players that were traded midseason) will have multiple associated records. To make it interesting, let's make it so that the players with the most home runs in 2022 appear at the top of the leaderboard:
+2. For the 2022 season, let's get some simple (position) player statistics. To get player and team names, we must join BattingStats to the Players and Teams tables. Since chicks dig the long ball, let's sort our results so that the players with the most home runs in 2022 appear at the top of the leaderboard:
 
 SELECT p.Name, t.Name, bs.G AS Games, bs.AB AS `At Bats`, (bs.1B + bs.2B + bs.3B + bs.HR) AS Hits, bs.HR AS `Home Runs`
 FROM Players AS p
@@ -40,7 +40,7 @@ ORDER BY Strikeouts DESC;
 Gerrit Cole actually set the Yankees single-season strikeout record last season ... not that that stopped Yankees fans from booing him.
 
 
-4. What if we want to know about a batter's performance during the entirety of the Statcast era? Let's find their wRC+ (a rate statistic that measures hitting---think of it as a more advanced version of batting average) and wins above replacement (WAR, a cumulative statistic---think of this as the number of additional games the team would have lost without said player) between 2015 and 2022 inclusive:
+4. What if we want to know about a batter's performance during the entirety of the Statcast era? Let's find their wRC+ (a rate statistic that measures hitting---think of it as a more advanced version of batting average) and wins above replacement (WAR, a cumulative statistic---think of this as the number of additional games the team would have lost without said player) between 2015 and 2022 inclusive. The subquery in the JOIN clause computes a weighted average for wRC+ and a sum total for WAR, grouped by player. We once again join to the Players table to retrive player names:
 
 SELECT p.Name, ROUND(bs.`wRC+`) AS `Weighted Runs Created Plus`, bs.WAR AS `Wins Above Replacement`
 FROM Players AS p
@@ -50,7 +50,7 @@ JOIN (SELECT PlayerID, SUM(`wRC+` * PA) / SUM(PA) AS `wRC+`, SUM(WAR) AS WAR
 ON p.ID = bs.PlayerID
 ORDER BY `Wins Above Replacement` DESC;
 
-I hear that Mike Trout guy is pretty good.
+No surprise there. I hear that Mike Trout guy is pretty good.
 
 
 5. Advanced statistics are fun! Another one that captures pitching ability is fielding independent pitching (FIP), which is better than earned run average (ERA) because it is calculated using only strikeouts, walks, and home runs allowed. So if a pitcher plays for a team with a terrible defense, he may allow more earned runs than are deserved:
@@ -63,10 +63,10 @@ JOIN (SELECT PlayerID, SUM(ERA * TBF) / SUM(TBF) AS ERA, SUM(FIP * TBF) / SUM(TB
 ON p.ID = ps.PlayerID
 ORDER BY `Wins Above Replacement` DESC;
 
-There is a stronger correlatioin between FIP and WAR than between ERA and WAR. If Aaron Nola played for a team that could actually field (cough cough Rhys Hoskins cough cough), his ERA would have been a third of a run lower and he may have actually won the Cy Young award. Oh well.
+There is a stronger correlation between FIP and WAR than between ERA and WAR. If Aaron Nola played for a team that could actually field (cough cough Rhys Hoskins cough cough), his ERA would have been a third of a run lower and he may have actually won the Cy Young award. Life's not fair.
 
 
-6. Statcast tracks pitched and batted balls with quarter-inch precision, which means that we tell how hard a ball was thrown, its spin rate in (RPMs), its release location, where it crossed home plate, how hard it was hit ... the possibilities are endless! Let's test this out by selecting the pitchers that have thrown the most tracked pitches:
+6. Statcast tracks pitched and batted balls with quarter-inch precision, which means that we tell how hard a ball was thrown, its spin rate in (RPMs), its release location, where it crossed home plate, how hard it was hit ... the possibilities are endless! Let's test this out by selecting the pitchers that have thrown the most tracked pitches. We have a subquery in the FROM clause that counts the number of pitches associated with each pitcher(ID), and a JOIN to Players to get their names:
 
 SELECT p.Name, ps.Pitches
 FROM (SELECT PitcherID, COUNT(*) AS Pitches
@@ -83,36 +83,94 @@ That's a lot of pitches, man. My arm is tired just reading that leaderboard.
 COMPLEX QUERIES/DESCRIPTIONS
 ******************************
 
-7. Let's get some more information about pitches. What Phillies pitcher had the best curveball in 2022? What was its spin rate?
+7. Let's get some more information about pitches. What Phillies pitcher had the best curveball in 2022? What was its spin rate? The first subquery retrieves pitchers' 2022 weighted curveball value (wCB) for Phillies pitchers that featured a curveball as a part of their arsenal (which is ensured by the condition on curveball percentage, CU%). We need to compute spin rate using pitch data, which is accomplished by the subquery in the JOIN clause. Finally, we order the result by wCB and spin rate (descending):
 
 SELECT p.Name, ps.wCU, pi.SpinRate AS `Spin Rate`
 FROM Players AS p
 JOIN (SELECT PlayerID, wCU
       FROM PitchingStats
-      WHERE SEASON = 2022 AND `CU%` IS NOT NULL AND
-            Team = (SELECT ID
-                    FROM Teams
-                    WHERE Name = 'Philadelphia Phillies')) AS ps
+      WHERE SEASON = 2022 AND `CU%` IS NOT NULL AND `CU%` > 0 AND Team = (SELECT ID
+                                                                          FROM Teams
+                                                                          WHERE Name = 'Philadelphia Phillies')) AS ps
 ON p.ID = ps.PlayerID
 JOIN (SELECT PitcherID, AVG(SpinRate) AS SpinRate
       FROM PitchStats
-      WHERE Season = 2022 AND
-            PitcherTeam = (SELECT ID
-                           FROM Teams
-                           WHERE Name = 'Philadelphia Phillies') AND
-            PitchType = (SELECT ID
-                         FROM Pitches
-                         WHERE Name = 'Curveball')
+      WHERE Season = 2022 AND PitcherTeam = (SELECT ID
+                                             FROM Teams
+                                             WHERE Name = 'Philadelphia Phillies') AND PitchType = (SELECT ID
+                                                                                                    FROM Pitches
+                                                                                                    WHERE Name = 'Curveball')
       GROUP BY PitcherID) AS pi
 ON p.ID = pi.PitcherID
-ORDER BY ps.wCU DESC, `Spin Rate` DESC;
+ORDER BY ps.wCU DESC, `Spin Rate` DESC
+LIMIT 1;
 
-Zach Eflin sure can bend it like Beckham! This query works by 
-
-
-
+Zach Eflin sure can bend it like Beckham!
 
 
+8. Now let's find the longest home run hit in 2022. To this end, the innermost subquery computes the furthest-hit batted ball that produced a home run. The outer subquery takes this maximum distance, and finds the batter, pitch, exit velocity (EV), and launch angle (LA) associated with the homer. We then perform two joins to the Players relation to get the identities of the batter and pitcher. This query is deceptively complex (taking ~30 seconds to execute), since the PitchStats relation must cross-reference every BBDistances for every home run in 2022 to itself:
+
+SELECT p1.Name AS Batter, p2.Name AS Pitcher, pi.BBDistance AS `Home Run Distance`, pi.EV AS `Exit Velocity`, pi.LA AS `Launch Angle`
+FROM (SELECT BatterID, PitcherID, BBDistance, EV, LA
+      FROM PitchStats
+      WHERE Season = 2022 AND Play = 'HR' AND BBDistance = (SELECT MAX(BBDistance)
+                                                            FROM PitchStats
+                                                            WHERE Season = 2022 AND Play = 'HR')) AS pi
+JOIN Players AS p1
+ON p1.ID = pi.BatterID
+JOIN Players AS p2
+ON p2.ID = pi.PitcherID;
+
+Unsurprisingly, the longest homer in 2022 was hit by a Colorado Rockie, C.J. Cron. That thin mountain air really makes the ball jump!
+
+9. Pitch velocity has really been trending upwards in recent seasons, and strikeouts have followed naturally. To see this in action, let's find the teams in each season that had three or more "flamethrowers" on their roster. For our purposes, a flamethrower is a pitcher than threw at least one pitch with a release speed and adjusted speed (pitch speed adjusted for how close to home plate the pitcher was able to extend before releasing the ball) of at least 100 mph. The first nested subquery counts the number of flamethrowers on each team in each season by joining the list of pitches thrown with a release speed of 100 mph to the list of pitches thrown with an adjusted speed of 100 mph (identifying pitches/pitchers that satisfied both criteria) and filters for teams having at least three such distinct pitchers. We then JOIN to PitchingStats to find the number of strikeouts those teams racked up in each season. Finally, we join to Teams to get the teams' names and sort by season, number of flamethrowers, and strikeouts. This query took a whopping four minutes to execute:
+
+SELECT t.Name, pi.Season, pi.FlameThrowers, ps.K AS Strikeouts
+FROM (SELECT pi1.PitcherTeam, pi1.Season, COUNT(DISTINCT pi1.PitcherID) AS Flamethrowers
+      FROM (SELECT PitcherID, PitcherTeam, Season
+            FROM PitchStats
+            WHERE PitchSpeed >= 100) AS pi1
+      JOIN (SELECT PitcherID, PitcherTeam, Season
+            FROM PitchStats
+            WHERE PitchSpeedAdjusted >= 100) AS pi2
+      ON pi1.PitcherID = pi2.PitcherID AND pi1.PitcherTeam = pi2.PitcherTeam AND pi1.Season = pi2.Season
+      GROUP BY PitcherTeam, Season
+      HAVING Flamethrowers >= 3) AS pi
+JOIN (SELECT Team, Season, SUM(K) AS K
+      FROM PitchingStats
+      GROUP BY Team, Season) AS ps
+ON pi.PitcherTeam = ps.Team AND pi.Season = ps.Season
+JOIN Teams AS t
+ON pi.PitcherTeam = t.ID
+ORDER BY Season DESC, Flamethrowers DESC, Strikeouts DESC;
+
+There were five teams in 2022 (eight in 2021) that had at least five flamethrowers, compared to only two in 2015. Last season, the Yankees had EIGHT such players, and posted one of the highest strikeout rates in MLB history for good measure!
+
+
+10. For our final query, let's 
+
+SELECT pl.Name, p.Name AS Pitch, t.Name AS Team, pi1.`Whiff Rate`
+FROM (SELECT PitcherID, PitchType, PitcherTeam, CONCAT(ROUND(SUM(CASE WHEN Result = 'StrikeSwinging' THEN 1 ELSE 0 END) / SUM(CASE WHEN Result IN ('InPlay', 'StrikeSwinging', 'Foul', 'CatcherInterference', 'BatterInterference') THEN 1 ELSE 0 END) * 100, 1), '%') AS `Whiff Rate`
+      FROM PitchStats
+      WHERE PitchType IS NOT NULL AND PitcherID IN (SELECT ID
+                                                    FROM Players
+                                                    WHERE PitcherHandedness = 'L')
+      GROUP BY PitcherID, PitchType, PitcherTeam) AS pi1
+JOIN (SELECT PitcherID, PitchType, PitcherTeam, COUNT(*) AS `Pitches Thrown`
+      FROM PitchStats
+      WHERE PitchType IS NOT NULL AND PitcherID IN (SELECT ID
+                                                    FROM Players
+                                                    WHERE PitcherHandedness = 'L')
+      GROUP BY PitcherID, PitchType, PitcherTeam
+      HAVING `Pitches Thrown` >= 50) AS pi2
+ON pi1.PitchType = pi2.PitchType AND pi1.PitcherTeam = pi2.PitcherTeam
+JOIN Players AS pl
+ON pi1.PitcherID = pl.ID
+JOIN Teams AS t
+ON pi1.PitcherTeam = t.ID
+JOIN Pitches AS p
+ON pi1.PitchType = p.ID
+ORDER BY p.Name, t.Name;
 
 2. Find the proportion of pitches that a particular pitcher ('First Last') throws in each zone. 
 
