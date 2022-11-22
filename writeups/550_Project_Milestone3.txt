@@ -147,20 +147,21 @@ ORDER BY Season DESC, Flamethrowers DESC, Strikeouts DESC;
 There were five teams in 2022 (eight in 2021) that had at least five flamethrowers, compared to only two in 2015. Last season, the Yankees had EIGHT such players, and posted one of the highest strikeout rates in MLB history for good measure!
 
 
-10. For our final query, let's 
+10. For our final query, let's analyze how pitchers' whiff rates changed from team to team. Certain pitching coaches are known for their pitch-sequence strategizing, helping their pitchers get the most "bang for their buck" on the mound. Whiff rate (swings and misses per total swings induced) is a convenient way to measure a pitches' effectiveness. Suppose also that we want to restrict our attention to left-handed pitchers, whose mechanics often fundsmentally differ from righties'. To ensure a representative sample size, we also only want to consider pitch types that were thrown at least 50 times while the pitcher was on a particular team. The first subquery uses two CASE WHEN statements to calculate whiff rates for each left-handed pitchers' pitches on each team they played for. The second subquery calculates the number of pitches thrown for each pitch type for each pitcher for each team, keeping only pitch/type/team combinations with a sample size of at least 50. We then use these results to filter the results of the first subquery by joining the two. The DISTINCT clause in the global SELECT statement eliminates all inicidental duplicates. The entire query takes about one minute to execute:
 
-SELECT pl.Name, p.Name AS Pitch, t.Name AS Team, pi1.`Whiff Rate`
+SELECT DISTINCT pl.Name, p.Name AS Pitch, t.Name AS Team, pi1.`Whiff Rate`
 FROM (SELECT PitcherID, PitchType, PitcherTeam, CONCAT(ROUND(SUM(CASE WHEN Result = 'StrikeSwinging' THEN 1 ELSE 0 END) / SUM(CASE WHEN Result IN ('InPlay', 'StrikeSwinging', 'Foul', 'CatcherInterference', 'BatterInterference') THEN 1 ELSE 0 END) * 100, 1), '%') AS `Whiff Rate`
       FROM PitchStats
-      WHERE PitchType IS NOT NULL AND PitcherID IN (SELECT ID
-                                                    FROM Players
+      WHERE PitchType IS NOT NULL AND PitcherID IN (SELECT PitcherID
+                                                    FROM PitchStats
                                                     WHERE PitcherHandedness = 'L')
       GROUP BY PitcherID, PitchType, PitcherTeam) AS pi1
 JOIN (SELECT PitcherID, PitchType, PitcherTeam, COUNT(*) AS `Pitches Thrown`
       FROM PitchStats
-      WHERE PitchType IS NOT NULL AND PitcherID IN (SELECT ID
-                                                    FROM Players
-                                                    WHERE PitcherHandedness = 'L')
+      WHERE PitchType IS NOT NULL AND
+            PitcherID IN (SELECT PitcherID
+                          FROM PitchStats
+                          WHERE PitcherHandedness = 'L')
       GROUP BY PitcherID, PitchType, PitcherTeam
       HAVING `Pitches Thrown` >= 50) AS pi2
 ON pi1.PitchType = pi2.PitchType AND pi1.PitcherTeam = pi2.PitcherTeam
@@ -170,7 +171,9 @@ JOIN Teams AS t
 ON pi1.PitcherTeam = t.ID
 JOIN Pitches AS p
 ON pi1.PitchType = p.ID
-ORDER BY p.Name, t.Name;
+ORDER BY pl.Name, Pitch, Team;
+
+
 
 2. Find the proportion of pitches that a particular pitcher ('First Last') throws in each zone. 
 
