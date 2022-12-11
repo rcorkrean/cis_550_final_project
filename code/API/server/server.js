@@ -13,34 +13,6 @@ app.get('/players_batting_bs', routes.players_batting_bs);
 app.get('/players_pitching_bs', routes.players_pitching_bs);
 
 
-
-
-
-// Route 2 - register as GET 
-app.get('/jersey/:choice', routes.jersey);
-
-// Route 3 - register as GET 
-app.get('/matches/:league', routes.all_matches);
-
-// Route 4 - register as GET 
-app.get('/players', routes.all_players);
-
-// Route 5 - register as GET 
-app.get('/match', routes.match);
-
-// Route 6 - register as GET 
-app.get('/player', routes.player);
-
-// Route 7 - register as GET 
-app.get('/search/matches', routes.search_matches);
-
-// Route 8 - register as GET 
-app.get('/search/players', routes.search_players);
-
-
-
-
-
 app.listen(config.server_port, () => {
     console.log(`Server running at http://${config.server_host}:${config.server_port}/`);
 });
