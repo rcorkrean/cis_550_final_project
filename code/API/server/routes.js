@@ -17,68 +17,77 @@ async function players_batting_bs(req, res) {
     const splitseasons = req.query.splitseasons && req.query.splitseasons == 'true' ? true : req.query.splitseasons && req.query.splitseasons == 'false' ? false: true;
     const splitteams = req.query.splitteams && req.query.splitteams == 'true' ? true : req.query.splitteams && req.query.splitteams == 'false' ? false: false;
     const percentiles = req.query.percentiles && req.query.percentiles == 'true' ? true : req.query.percentiles && req.query.percentiles == 'false' ? false: false;
-    const seasons = req.query.seasons ? req.query.seasons : Array.from({length: 8}, (_, i) => i + 2015);
-    const teams = req.query.teams ? req.query.teams : ['ARI', 'ATL', 'BAL', 'BOS', 'CHC', 'CIN', 'CLE', 'COL', 'CWS', 'DET', 'HOU', 'KC', 'LAA', 'LAD', 'MIA', 'MIL', 'MIN', 'NYM', 'NYY', 'OAK', 'PHI', 'PIT', 'SD', 'SEA', 'SF', 'STL', 'TB', 'TEX', 'TOR', 'WSH'];
     const pa_threshold = req.query.pa_threshold ? req.query.pa_threshold : 423;
+    const seasons = [];
+    Array.from({length: 8}, (_, i) => i + 2015).forEach((s) => {
+        if (!(req.query[s] && req.query[s] == 'false')) {
+            seasons.push(s);
+        }
+    });
+    const teams = [];
+    ['ARI', 'ATL', 'BAL', 'BOS', 'CHC', 'CIN', 'CLE', 'COL', 'CWS', 'DET', 'HOU', 'KC', 'LAA', 'LAD', 'MIA', 'MIL', 'MIN', 'NYM', 'NYY', 'OAK', 'PHI', 'PIT', 'SD', 'SEA', 'SF', 'STL', 'TB', 'TEX', 'TOR', 'WSH'].forEach((t) => {
+        if (!(req.query[t] && req.query[t] == 'false')) {
+            teams.push(t);
+        }
+    });
+
     if (splitseasons) {
         if (splitteams) {
             if (percentiles) {
                 connection.query(`WITH bs1 AS (SELECT PlayerID, Season, Age, Team, G, AB, PA, BBE, Barrels, HR, K, BB, IBB, HBP, SF, EV, maxEV, BA, xBA,
-                                                        BABIP, OBP, SLG, xSLG, ISO, wOBA, xwOBA, xwOBAcon, \`wRC+\`, WAR
-                                                FROM BattingStats
-                                                WHERE Season IN (${seasons.join(', ')}) AND Team IN ('${teams.join("', '")}') AND PA >= ${pa_threshold})
+                                                      BABIP, OBP, SLG, xSLG, ISO, wOBA, xwOBA, xwOBAcon, \`wRC+\`, WAR
+                                               FROM BattingStats
+                                               WHERE Season IN (${seasons.join(', ')}) AND Team IN ('${teams.join("', '")}') AND PA >= ${pa_threshold})
 
-                                    SELECT p.Name, bs2.\`Season(s)\`, bs2.\`Age(s)\`, bs2.\`Team(s)\`,
-                                        CONCAT(ROUND(PERCENT_RANK() OVER (PARTITION BY bs2.\`Season(s)\` ORDER BY bs2.G) * 100, 1), '%') AS G,
-                                        CONCAT(ROUND(PERCENT_RANK() OVER (PARTITION BY bs2.\`Season(s)\` ORDER BY bs2.PA) * 100, 1), '%') AS PA,
-                                        CONCAT(ROUND(PERCENT_RANK() OVER (PARTITION BY bs2.\`Season(s)\` ORDER BY bs2.BBE) * 100, 1), '%') AS BBE,
-                                        CONCAT(ROUND(PERCENT_RANK() OVER (PARTITION BY bs2.\`Season(s)\` ORDER BY bs2.\`BB%\`) * 100, 1), '%') AS \`BB%\`,
-                                        CONCAT(ROUND(PERCENT_RANK() OVER (PARTITION BY bs2.\`Season(s)\` ORDER BY bs2.\`K%\`) * 100, 1), '%') AS \`K%\`,
-                                        CONCAT(ROUND(PERCENT_RANK() OVER (PARTITION BY bs2.\`Season(s)\` ORDER BY bs2.EV) * 100, 1), '%') AS EV,
-                                        CONCAT(ROUND(PERCENT_RANK() OVER (PARTITION BY bs2.\`Season(s)\` ORDER BY bs2.\`Barrels/PA\`) * 100, 1),
-                                                '%') AS \`Barrels/PA\`,
-                                        CONCAT(ROUND(PERCENT_RANK() OVER (PARTITION BY bs2.\`Season(s)\` ORDER BY bs2.BA) * 100, 1), '%') AS BA,
-                                        CONCAT(ROUND(PERCENT_RANK() OVER (PARTITION BY bs2.\`Season(s)\` ORDER BY bs2.xBA) * 100, 1), '%') AS xBA,
-                                        CONCAT(ROUND(PERCENT_RANK() OVER (PARTITION BY bs2.\`Season(s)\` ORDER BY bs2.BABIP) * 100, 1), '%') AS BABIP,
-                                        CONCAT(ROUND(PERCENT_RANK() OVER (PARTITION BY bs2.\`Season(s)\` ORDER BY bs2.xBABIP) * 100, 1), '%') AS xBABIP,
-                                        CONCAT(ROUND(PERCENT_RANK() OVER (PARTITION BY bs2.\`Season(s)\` ORDER BY bs2.OBP) * 100, 1), '%') AS OBP,
-                                        CONCAT(ROUND(PERCENT_RANK() OVER (PARTITION BY bs2.\`Season(s)\` ORDER BY bs2.xOBP) * 100, 1), '%') AS xOBP,
-                                        CONCAT(ROUND(PERCENT_RANK() OVER (PARTITION BY bs2.\`Season(s)\` ORDER BY bs2.SLG) * 100, 1), '%') AS SLG,
-                                        CONCAT(ROUND(PERCENT_RANK() OVER (PARTITION BY bs2.\`Season(s)\` ORDER BY bs2.xSLG) * 100, 1), '%') AS xSLG,
-                                        CONCAT(ROUND(PERCENT_RANK() OVER (PARTITION BY bs2.\`Season(s)\` ORDER BY bs2.ISO) * 100, 1), '%') AS ISO,
-                                        CONCAT(ROUND(PERCENT_RANK() OVER (PARTITION BY bs2.\`Season(s)\` ORDER BY bs2.xISO) * 100, 1), '%') AS xISO,
-                                        CONCAT(ROUND(PERCENT_RANK() OVER (PARTITION BY bs2.\`Season(s)\` ORDER BY bs2.wOBA) * 100, 1), '%') AS wOBA,
-                                        CONCAT(ROUND(PERCENT_RANK() OVER (PARTITION BY bs2.\`Season(s)\` ORDER BY bs2.xwOBA) * 100, 1), '%') AS xwOBA,
-                                        CONCAT(ROUND(PERCENT_RANK() OVER (PARTITION BY bs2.\`Season(s)\` ORDER BY bs2.wOBA) * 100, 1), '%') AS wOBA,
-                                        CONCAT(ROUND(PERCENT_RANK() OVER (PARTITION BY bs2.\`Season(s)\` ORDER BY bs2.xwOBAcon) * 100, 1),
-                                                '%') AS xwOBAcon,
-                                        CONCAT(ROUND(PERCENT_RANK() OVER (PARTITION BY bs2.\`Season(s)\` ORDER BY bs2.\`wRC+\`) * 100, 1), '%') AS \`wRC+\`,
-                                        CONCAT(ROUND(PERCENT_RANK() OVER (PARTITION BY bs2.\`Season(s)\` ORDER BY bs2.WAR) * 100, 1), '%') AS WAR
-                                    FROM (SELECT bs1.PlayerID, bs1.Season AS \`Season(s)\`, bs1.Age AS \`Age(s)\`, bs1.Team AS \`Team(s)\`, bs1.G, bs1.PA,
-                                                bs1.BBE, bs1.BB / bs1.PA AS \`BB%\`, bs1.K / bs1.PA AS \`K%\`, bs1.EV, bs1.maxEV,
-                                                bs1.Barrels / bs1.PA AS \`Barrels/PA\`, bs1.BA, bs1.xBA, bs1.BABIP,
-                                                (bs1.xBA * bs1.AB - bs1.HR) / (bs1.AB - bs1.HR - bs1.K + bs1.SF) AS xBABIP, bs1.OBP,
-                                                (bs1.xBA * bs1.AB + bs1.BB + bs1.HBP) / bs1.PA AS xOBP, bs1.SLG, bs1.xSLG, bs1.ISO,
-                                                bs1.xSLG - bs1.xBA AS xISO, bs1.wOBA, bs1.xwOBA,
-                                                (bs1.wOBA * bs1.PA - CASE WHEN bs1.Season = 2015 THEN 0.687
-                                                                        WHEN bs1.Season = 2016 THEN 0.691
-                                                                        WHEN bs1.Season = 2017 THEN 0.693
-                                                                        WHEN bs1.Season IN (2018, 2019) THEN 0.690
-                                                                        WHEN bs1.Season = 2020 THEN 0.699
-                                                                        WHEN bs1.Season = 2021 THEN 0.692
-                                                                        WHEN bs1.Season = 2022 THEN 0.689 END * (bs1.BB - bs1.IBB) -
-                                                CASE WHEN bs1.Season = 2015 THEN 0.718
-                                                    WHEN bs1.Season = 2016 THEN 0.721
-                                                    WHEN bs1.Season = 2017 THEN 0.723
-                                                    WHEN bs1.Season IN (2018, 2022) THEN 0.72
-                                                    WHEN bs1.Season = 2019 THEN 0.719
-                                                    WHEN bs1.Season = 2020 THEN 0.728
-                                                    WHEN bs1.Season = 2021 THEN 0.722 END * bs1.HBP) AS wOBAcon, bs1.xwOBAcon, bs1.\`wRC+\`, bs1.WAR
+                                  SELECT p.Name, bs2.\`Season(s)\`, bs2.\`Age(s)\`, bs2.\`Team(s)\`,
+                                         CONCAT(ROUND(PERCENT_RANK() OVER (PARTITION BY bs2.\`Season(s)\` ORDER BY bs2.G) * 100, 1), '%') AS G,
+                                         CONCAT(ROUND(PERCENT_RANK() OVER (PARTITION BY bs2.\`Season(s)\` ORDER BY bs2.PA) * 100, 1), '%') AS PA,
+                                         CONCAT(ROUND(PERCENT_RANK() OVER (PARTITION BY bs2.\`Season(s)\` ORDER BY bs2.BBE) * 100, 1), '%') AS BBE,
+                                         CONCAT(ROUND(PERCENT_RANK() OVER (PARTITION BY bs2.\`Season(s)\` ORDER BY bs2.\`BB%\`) * 100, 1), '%') AS \`BB%\`,
+                                         CONCAT(ROUND(PERCENT_RANK() OVER (PARTITION BY bs2.\`Season(s)\` ORDER BY bs2.\`K%\`) * 100, 1), '%') AS \`K%\`,
+                                         CONCAT(ROUND(PERCENT_RANK() OVER (PARTITION BY bs2.\`Season(s)\` ORDER BY bs2.EV) * 100, 1), '%') AS EV,
+                                         CONCAT(ROUND(PERCENT_RANK() OVER (PARTITION BY bs2.\`Season(s)\` ORDER BY bs2.\`Barrels/PA\`) * 100, 1), '%') AS \`Barrels/PA\`,
+                                         CONCAT(ROUND(PERCENT_RANK() OVER (PARTITION BY bs2.\`Season(s)\` ORDER BY bs2.BA) * 100, 1), '%') AS BA,
+                                         CONCAT(ROUND(PERCENT_RANK() OVER (PARTITION BY bs2.\`Season(s)\` ORDER BY bs2.xBA) * 100, 1), '%') AS xBA,
+                                         CONCAT(ROUND(PERCENT_RANK() OVER (PARTITION BY bs2.\`Season(s)\` ORDER BY bs2.BABIP) * 100, 1), '%') AS BABIP,
+                                         CONCAT(ROUND(PERCENT_RANK() OVER (PARTITION BY bs2.\`Season(s)\` ORDER BY bs2.xBABIP) * 100, 1), '%') AS xBABIP,
+                                         CONCAT(ROUND(PERCENT_RANK() OVER (PARTITION BY bs2.\`Season(s)\` ORDER BY bs2.OBP) * 100, 1), '%') AS OBP,
+                                         CONCAT(ROUND(PERCENT_RANK() OVER (PARTITION BY bs2.\`Season(s)\` ORDER BY bs2.xOBP) * 100, 1), '%') AS xOBP,
+                                         CONCAT(ROUND(PERCENT_RANK() OVER (PARTITION BY bs2.\`Season(s)\` ORDER BY bs2.SLG) * 100, 1), '%') AS SLG,
+                                         CONCAT(ROUND(PERCENT_RANK() OVER (PARTITION BY bs2.\`Season(s)\` ORDER BY bs2.xSLG) * 100, 1), '%') AS xSLG,
+                                         CONCAT(ROUND(PERCENT_RANK() OVER (PARTITION BY bs2.\`Season(s)\` ORDER BY bs2.ISO) * 100, 1), '%') AS ISO,
+                                         CONCAT(ROUND(PERCENT_RANK() OVER (PARTITION BY bs2.\`Season(s)\` ORDER BY bs2.xISO) * 100, 1), '%') AS xISO,
+                                         CONCAT(ROUND(PERCENT_RANK() OVER (PARTITION BY bs2.\`Season(s)\` ORDER BY bs2.wOBA) * 100, 1), '%') AS wOBA,
+                                         CONCAT(ROUND(PERCENT_RANK() OVER (PARTITION BY bs2.\`Season(s)\` ORDER BY bs2.xwOBA) * 100, 1), '%') AS xwOBA,
+                                         CONCAT(ROUND(PERCENT_RANK() OVER (PARTITION BY bs2.\`Season(s)\` ORDER BY bs2.wOBA) * 100, 1), '%') AS wOBA,
+                                         CONCAT(ROUND(PERCENT_RANK() OVER (PARTITION BY bs2.\`Season(s)\` ORDER BY bs2.xwOBAcon) * 100, 1), '%') AS xwOBAcon,
+                                         CONCAT(ROUND(PERCENT_RANK() OVER (PARTITION BY bs2.\`Season(s)\` ORDER BY bs2.\`wRC+\`) * 100, 1), '%') AS \`wRC+\`,
+                                         CONCAT(ROUND(PERCENT_RANK() OVER (PARTITION BY bs2.\`Season(s)\` ORDER BY bs2.WAR) * 100, 1), '%') AS WAR
+                                  FROM (SELECT bs1.PlayerID, bs1.Season AS \`Season(s)\`, bs1.Age AS \`Age(s)\`, bs1.Team AS \`Team(s)\`, bs1.G, bs1.PA,
+                                               bs1.BBE, bs1.BB / bs1.PA AS \`BB%\`, bs1.K / bs1.PA AS \`K%\`, bs1.EV, bs1.maxEV,
+                                               bs1.Barrels / bs1.PA AS \`Barrels/PA\`, bs1.BA, bs1.xBA, bs1.BABIP,
+                                               (bs1.xBA * bs1.AB - bs1.HR) / (bs1.AB - bs1.HR - bs1.K + bs1.SF) AS xBABIP, bs1.OBP,
+                                               (bs1.xBA * bs1.AB + bs1.BB + bs1.HBP) / bs1.PA AS xOBP, bs1.SLG, bs1.xSLG, bs1.ISO,
+                                               bs1.xSLG - bs1.xBA AS xISO, bs1.wOBA, bs1.xwOBA,
+                                               (bs1.wOBA * bs1.PA - CASE WHEN bs1.Season = 2015 THEN 0.687
+                                                                         WHEN bs1.Season = 2016 THEN 0.691
+                                                                         WHEN bs1.Season = 2017 THEN 0.693
+                                                                         WHEN bs1.Season IN (2018, 2019) THEN 0.690
+                                                                         WHEN bs1.Season = 2020 THEN 0.699
+                                                                         WHEN bs1.Season = 2021 THEN 0.692
+                                                                         WHEN bs1.Season = 2022 THEN 0.689 END * (bs1.BB - bs1.IBB) - CASE WHEN bs1.Season = 2015 THEN 0.718
+                                                                                                                                           WHEN bs1.Season = 2016 THEN 0.721
+                                                                                                                                           WHEN bs1.Season = 2017 THEN 0.723
+                                                                                                                                           WHEN bs1.Season IN (2018, 2022) THEN 0.72
+                                                                                                                                           WHEN bs1.Season = 2019 THEN 0.719
+                                                                                                                                           WHEN bs1.Season = 2020 THEN 0.728
+                                                                                                                                           WHEN bs1.Season = 2021 THEN 0.722 END * bs1.HBP) AS wOBAcon,
+                                               bs1.xwOBAcon, bs1.\`wRC+\`, bs1.WAR
                                         FROM bs1) AS bs2
-                                    JOIN Players AS p
-                                    ON bs2.PlayerID = p.ID
-                                    ORDER BY bs2.WAR DESC, SUBSTRING_INDEX(p.Name, ' ', -1), SUBSTRING_INDEX(p.Name, ' ', 1)
-                                    LIMIT ${pagesize} OFFSET ${(page - 1) * pagesize};`,
+                                  JOIN Players AS p
+                                  ON bs2.PlayerID = p.ID
+                                  ORDER BY bs2.WAR DESC, SUBSTRING_INDEX(p.Name, ' ', -1), SUBSTRING_INDEX(p.Name, ' ', 1)
+                                  LIMIT ${pagesize} OFFSET ${(page - 1) * pagesize};`,
                          function (error, results, fields) {
                             if (error) {
                                 console.log(error)
@@ -88,63 +97,38 @@ async function players_batting_bs(req, res) {
                             }
                          });
             } else {
-                connection.query(`WITH bs1 AS (SELECT PlayerID, Season, Team, G, AB, PA, BBE, HR, K, BB, IBB, HBP, SF, EV, maxEV, Barrels, BA, xBA, BABIP,
-                                                        OBP, SLG, xSLG, ISO, wOBA, xwOBA, xwOBAcon, \`wRC+\`, WAR
-                                                FROM BattingStats
-                                                WHERE Season IN (${seasons.join(', ')}) AND Team IN ('${teams.join("', '")}')),
-                                        cnt AS (SELECT PlayerID, Team, COUNT(DISTINCT Season) AS NumSeasons
-                                                FROM BattingStats
-                                                WHERE Season IN (${seasons.join(', ')}) AND Team IN ('${teams.join("', '")}')
-                                                GROUP BY PlayerID, Team),
-                                        bs3 AS (SELECT PlayerID, Season, Age, Team
-                                                FROM BattingStats
-                                                WHERE Season IN (${seasons.join(', ')}) AND Team IN ('${teams.join("', '")}'))
+                connection.query(`WITH bs AS (SELECT PlayerID, Season, Age, Team, G, AB, PA, BBE, Barrels, HR, K, BB, IBB, HBP, SF, EV, maxEV, BA, xBA,
+                                                     BABIP, OBP, SLG, xSLG, ISO, wOBA, xwOBA, xwOBAcon, \`wRC+\`, WAR
+                                              FROM BattingStats
+                                              WHERE Season IN (${seasons.join(', ')}) AND Team IN ('${teams.join("', '")}') AND PA >= ${pa_threshold})
 
-                                    SELECT p.Name, COALESCE(bs3.Season, bs2.\`Season(s)\`) AS \`Season(s)\`, COALESCE(bs3.Age, bs2.\`Season(s)\`) AS \`Age(s)\`,
-                                        bs2.\`Team(s)\`, bs2.G, bs2.PA, bs2.BBE, CONCAT(ROUND(bs2.\`BB%\` * 100, 1), '%') AS \`BB%\`,
-                                        CONCAT(ROUND(bs2.\`K%\` * 100, 1), '%') AS \`K%\`, ROUND(bs2.EV, 1) AS EV, ROUND(bs2.maxEV, 1) AS maxEV,
-                                        CONCAT(ROUND(bs2.\`Barrels/PA\` * 100, 1), '%') AS \`Barrels/PA\`, ROUND(bs2.BA, 3) AS BA, ROUND(bs2.xBA, 3) AS xBA,
-                                        ROUND(bs2.BABIP, 3) AS BABIP, ROUND(bs2.xBABIP, 3) AS xBABIP, ROUND(bs2.OBP, 3) AS OBP,
-                                        ROUND(bs2.xOBP, 3) AS xOBP, ROUND(bs2.SLG, 3) AS SLG, ROUND(bs2.xSLG, 3) AS xSLG, ROUND(bs2.ISO, 3) AS ISO,
-                                        ROUND(bs2.xISO, 3) AS xISO, ROUND(bs2.wOBA, 3) AS wOBA, ROUND(bs2.xwOBA, 3) AS xwOBA,
-                                        ROUND(bs2.woBACon, 3) AS wOBAcon, ROUND(bs2.xwOBAcon, 3) AS xwOBAcon, ROUND(bs2.\`wRC+\`) AS \`wRC+\`, bs2.WAR
-                                    FROM (SELECT bs1.PlayerID, cnt.NumSeasons AS \`Season(s)\`, bs1.Team AS \`Team(s)\`, SUM(bs1.G) AS G, SUM(bs1.PA) AS PA,
-                                                SUM(bs1.BBE) AS BBE, SUM(bs1.BB) / SUM(bs1.PA) AS \`BB%\`, SUM(bs1.K) / SUM(bs1.PA) AS \`K%\`,
-                                                SUM(bs1.EV * bs1.BBE) / SUM(bs1.BBE) AS EV, MAX(bs1.maxEV) AS maxEV,
-                                                SUM(bs1.Barrels) / SUM(bs1.PA) AS \`Barrels/PA\`, SUM(bs1.BA * bs1.AB) / SUM(bs1.AB) AS BA,
-                                                SUM(bs1.xBA * bs1.AB) / SUM(bs1.AB) AS xBA, SUM(bs1.BABIP * bs1.BBE) / SUM(bs1.BBE) AS BABIP,
-                                                SUM((bs1.xBA * bs1.AB - bs1.HR) / (bs1.AB - bs1.HR - bs1.K + bs1.SF) * bs1.BBE) / SUM(bs1.BBE) AS xBABIP,
-                                                SUM(bs1.OBP * bs1.PA) / SUM(bs1.PA) AS OBP, SUM(bs1.xBA * bs1.AB + bs1.BB + bs1.HBP) / SUM(bs1.PA) AS xOBP,
-                                                SUM(bs1.SLG * bs1.AB) / SUM(bs1.AB) AS SLG, SUM(bs1.xSLG * bs1.AB) / SUM(bs1.AB) AS xSLG,
-                                                SUM(bs1.ISO * bs1.AB) / SUM(bs1.AB) AS ISO, SUM((bs1.xSLG - bs1.xBA) * bs1.AB) / SUM(bs1.AB) AS xISO,
-                                                SUM(bs1.wOBA * bs1.PA) / SUM(bs1.PA) AS wOBA, SUM(bs1.xwOBA * bs1.PA) / SUM(bs1.PA) AS xwOBA,
-                                                SUM((bs1.wOBA * bs1.PA - CASE WHEN bs1.Season = 2015 THEN 0.687
-                                                                            WHEN bs1.Season = 2016 THEN 0.691
-                                                                            WHEN bs1.Season = 2017 THEN 0.693
-                                                                            WHEN bs1.Season IN (2018, 2019) THEN 0.690
-                                                                            WHEN bs1.Season = 2020 THEN 0.699
-                                                                            WHEN bs1.Season = 2021 THEN 0.692
-                                                                            WHEN bs1.Season = 2022 THEN 0.689 END * (bs1.BB - bs1.IBB) -
-                                                    CASE WHEN bs1.Season = 2015 THEN 0.718
-                                                        WHEN bs1.Season = 2016 THEN 0.721
-                                                        WHEN bs1.Season = 2017 THEN 0.723
-                                                        WHEN bs1.Season IN (2018, 2022) THEN 0.72
-                                                        WHEN bs1.Season = 2019 THEN 0.719
-                                                        WHEN bs1.Season = 2020 THEN 0.728
-                                                        WHEN bs1.Season = 2021 THEN 0.722 END * bs1.HBP) * bs1.BBE) / SUM(bs1.BBE) AS wOBAcon,
-                                                SUM(bs1.xwOBAcon * bs1.BBE) / SUM(bs1.BBE) AS xwOBACon, SUM(bs1.\`wRC+\` * bs1.PA) / SUM(bs1.PA) AS \`wRC+\`,
-                                                SUM(bs1.WAR) AS WAR
-                                        FROM bs1
-                                        JOIN cnt
-                                        ON bs1.PlayerID = cnt.PlayerID AND bs1.Team = cnt.Team
-                                        GROUP BY bs1.PlayerID, bs1.Team) AS bs2
-                                    JOIN Players AS p
-                                    ON bs2.PlayerID = p.ID
-                                    LEFT JOIN bs3
-                                    ON bs2.PlayerID = bs3.PlayerID AND bs2.\`Team(s)\` = bs3.Team AND bs2.\`Season(s)\` = 1
-                                    WHERE bs2.PA >= ${pa_threshold}
-                                    ORDER BY bs2.WAR DESC, SUBSTRING_INDEX(p.Name, ' ', -1), SUBSTRING_INDEX(p.Name, ' ', 1)
-                                    LIMIT ${pagesize} OFFSET ${(page - 1) * pagesize};`,
+                                  SELECT p.Name, bs.Season AS \`Season(s)\`, bs.Age AS \`Age(s)\`, bs.Team AS \`Team(s)\`, bs.G, bs.PA, bs.BBE,
+                                         CONCAT(ROUND(bs.BB / bs.PA * 100, 1), '%') AS \`BB%\`, CONCAT(ROUND(bs.K / bs.PA * 100, 1), '%') AS \`K%\`,
+                                         ROUND(bs.EV, 1) AS EV, ROUND(bs.maxEV, 1) AS maxEV,
+                                         CONCAT(ROUND(bs.Barrels / bs.PA * 100, 1), '%') AS \`Barrels/PA\`, ROUND(bs.BA, 3) AS BA, ROUND(bs.xBA, 3) AS xBA,
+                                         ROUND(bs.BABIP, 3) AS BABIP, ROUND((bs.xBA * bs.AB - bs.HR) / (bs.AB - bs.HR - bs.K + bs.SF), 3) AS xBABIP,
+                                         ROUND(bs.OBP, 3) AS OBP, ROUND((bs.xBA * bs.AB + bs.BB + bs.HBP) / bs.PA, 3) AS xOBP, ROUND(bs.SLG, 3) AS SLG,
+                                         ROUND(bs.xSLG, 3) AS xSLG, ROUND(bs.ISO, 3) AS ISO, ROUND(bs.xSLG - bs.xBA, 3) AS xISO,
+                                         ROUND(bs.wOBA, 3) AS wOBA, ROUND(bs.xwOBA, 3) AS xwOBA,
+                                         ROUND(bs.wOBA * bs.PA - CASE WHEN bs.Season = 2015 THEN 0.687
+                                                                     WHEN bs.Season = 2016 THEN 0.691
+                                                                     WHEN bs.Season = 2017 THEN 0.693
+                                                                     WHEN bs.Season IN (2018, 2019) THEN 0.690
+                                                                     WHEN bs.Season = 2020 THEN 0.699
+                                                                     WHEN bs.Season = 2021 THEN 0.692
+                                                                     WHEN bs.Season = 2022 THEN 0.689 END * (bs.BB - bs.IBB) - CASE WHEN bs.Season = 2015 THEN 0.718
+                                                                                                                                    WHEN bs.Season = 2016 THEN 0.721
+                                                                                                                                    WHEN bs.Season = 2017 THEN 0.723
+                                                                                                                                    WHEN bs.Season IN (2018, 2022) THEN 0.72
+                                                                                                                                    WHEN bs.Season = 2019 THEN 0.719
+                                                                                                                                    WHEN bs.Season = 2020 THEN 0.728
+                                                                                                                                    WHEN bs.Season = 2021 THEN 0.722 END * bs.HBP, 3) AS wOBAcon, ROUND(bs.xwOBAcon, 3) AS xwOBAcon,
+                                         ROUND(bs.\`wRC+\`) AS \`wRC+\`, bs.WAR
+                                  FROM bs
+                                  JOIN Players AS p
+                                  ON bs.PlayerID = p.ID
+                                  ORDER BY bs.WAR DESC, SUBSTRING_INDEX(p.Name, ' ', -1), SUBSTRING_INDEX(p.Name, ' ', 1)
+                                  LIMIT ${pagesize} OFFSET ${(page - 1) * pagesize};`,
                                 function (error, results, fields) {
                                     if (error) {
                                         console.log(error)
@@ -157,80 +141,76 @@ async function players_batting_bs(req, res) {
         } else {
             if (percentiles) {
                 connection.query(`WITH bs1 AS (SELECT PlayerID, Season, Age, G, AB, PA, BBE, HR, K, BB, IBB, HBP, SF, EV, maxEV, Barrels, BA, xBA, BABIP,
-                                                        OBP, SLG, xSLG, ISO, wOBA, xwOBA, xwOBAcon, \`wRC+\`, WAR
-                                                FROM BattingStats
-                                                WHERE Season IN (${seasons.join(', ')}) AND Team IN ('${teams.join("', '")}')),
-                                        cnt AS (SELECT PlayerID, Season, COUNT(*) AS NumTeams
-                                                FROM BattingStats
-                                                WHERE Season IN (${seasons.join(', ')}) AND Team IN ('${teams.join("', '")}')
-                                                GROUP BY PlayerID, Season),
-                                        bs3 AS (SELECT PlayerID, Season, Team
-                                                FROM BattingStats
-                                                WHERE Season IN (${seasons.join(', ')}) AND Team IN ('${teams.join("', '")}'))
+                                                      OBP, SLG, xSLG, ISO, wOBA, xwOBA, xwOBAcon, \`wRC+\`, WAR
+                                               FROM BattingStats
+                                               WHERE Season IN (${seasons.join(', ')}) AND Team IN ('${teams.join("', '")}')),
+                                       cnt AS (SELECT PlayerID, Season, COUNT(*) AS NumTeams
+                                               FROM BattingStats
+                                               WHERE Season IN (${seasons.join(', ')}) AND Team IN ('${teams.join("', '")}')
+                                               GROUP BY PlayerID, Season),
+                                       bs3 AS (SELECT PlayerID, Season, Team
+                                               FROM BattingStats
+                                               WHERE Season IN (${seasons.join(', ')}) AND Team IN ('${teams.join("', '")}'))
 
-                                    SELECT p.Name, bs2.\`Season(s)\`, bs2.\`Age(s)\`, COALESCE(bs3.Team, bs2.\`Team(s)\`) AS \`Team(s)\`,
-                                        CONCAT(ROUND(PERCENT_RANK() OVER (PARTITION BY bs2.\`Season(s)\` ORDER BY bs2.G) * 100, 1), '%') AS G,
-                                        CONCAT(ROUND(PERCENT_RANK() OVER (PARTITION BY bs2.\`Season(s)\` ORDER BY bs2.PA) * 100, 1), '%') AS PA,
-                                        CONCAT(ROUND(PERCENT_RANK() OVER (PARTITION BY bs2.\`Season(s)\` ORDER BY bs2.BBE) * 100, 1), '%') AS BBE,
-                                        CONCAT(ROUND(PERCENT_RANK() OVER (PARTITION BY bs2.\`Season(s)\` ORDER BY bs2.\`BB%\`) * 100, 1), '%') AS \`BB%\`,
-                                        CONCAT(ROUND(PERCENT_RANK() OVER (PARTITION BY bs2.\`Season(s)\` ORDER BY bs2.\`K%\`) * 100, 1), '%') AS \`K%\`,
-                                        CONCAT(ROUND(PERCENT_RANK() OVER (PARTITION BY bs2.\`Season(s)\` ORDER BY bs2.EV) * 100, 1), '%') AS EV,
-                                        CONCAT(ROUND(PERCENT_RANK() OVER (PARTITION BY bs2.\`Season(s)\` ORDER BY bs2.\`Barrels/PA\`) * 100, 1),
-                                                '%') AS \`Barrels/PA\`,
-                                        CONCAT(ROUND(PERCENT_RANK() OVER (PARTITION BY bs2.\`Season(s)\` ORDER BY bs2.BA) * 100, 1), '%') AS BA,
-                                        CONCAT(ROUND(PERCENT_RANK() OVER (PARTITION BY bs2.\`Season(s)\` ORDER BY bs2.xBA) * 100, 1), '%') AS xBA,
-                                        CONCAT(ROUND(PERCENT_RANK() OVER (PARTITION BY bs2.\`Season(s)\` ORDER BY bs2.BABIP) * 100, 1), '%') AS BABIP,
-                                        CONCAT(ROUND(PERCENT_RANK() OVER (PARTITION BY bs2.\`Season(s)\` ORDER BY bs2.xBABIP) * 100, 1), '%') AS xBABIP,
-                                        CONCAT(ROUND(PERCENT_RANK() OVER (PARTITION BY bs2.\`Season(s)\` ORDER BY bs2.OBP) * 100, 1), '%') AS OBP,
-                                        CONCAT(ROUND(PERCENT_RANK() OVER (PARTITION BY bs2.\`Season(s)\` ORDER BY bs2.xOBP) * 100, 1), '%') AS xOBP,
-                                        CONCAT(ROUND(PERCENT_RANK() OVER (PARTITION BY bs2.\`Season(s)\` ORDER BY bs2.SLG) * 100, 1), '%') AS SLG,
-                                        CONCAT(ROUND(PERCENT_RANK() OVER (PARTITION BY bs2.\`Season(s)\` ORDER BY bs2.xSLG) * 100, 1), '%') AS xSLG,
-                                        CONCAT(ROUND(PERCENT_RANK() OVER (PARTITION BY bs2.\`Season(s)\` ORDER BY bs2.ISO) * 100, 1), '%') AS ISO,
-                                        CONCAT(ROUND(PERCENT_RANK() OVER (PARTITION BY bs2.\`Season(s)\` ORDER BY bs2.xISO) * 100, 1), '%') AS xISO,
-                                        CONCAT(ROUND(PERCENT_RANK() OVER (PARTITION BY bs2.\`Season(s)\` ORDER BY bs2.wOBA) * 100, 1), '%') AS wOBA,
-                                        CONCAT(ROUND(PERCENT_RANK() OVER (PARTITION BY bs2.\`Season(s)\` ORDER BY bs2.xwOBA) * 100, 1), '%') AS xwOBA,
-                                        CONCAT(ROUND(PERCENT_RANK() OVER (PARTITION BY bs2.\`Season(s)\` ORDER BY bs2.wOBA) * 100, 1), '%') AS wOBA,
-                                        CONCAT(ROUND(PERCENT_RANK() OVER (PARTITION BY bs2.\`Season(s)\` ORDER BY bs2.xwOBAcon) * 100, 1),
-                                                '%') AS xwOBAcon,
-                                        CONCAT(ROUND(PERCENT_RANK() OVER (PARTITION BY bs2.\`Season(s)\` ORDER BY bs2.\`wRC+\`) * 100, 1), '%') AS \`wRC+\`,
-                                        CONCAT(ROUND(PERCENT_RANK() OVER (PARTITION BY bs2.\`Season(s)\` ORDER BY bs2.WAR) * 100, 1), '%') AS WAR
-                                    FROM (SELECT bs1.PlayerID, bs1.Season AS \`Season(s)\`, bs1.Age AS \`Age(s)\`, cnt.NumTeams AS \`Team(s)\`, SUM(bs1.G) AS G,
-                                                SUM(bs1.PA) AS PA, SUM(bs1.BBE) AS BBE, SUM(bs1.BB) / SUM(bs1.PA) AS \`BB%\`,
-                                                SUM(bs1.K) / SUM(bs1.PA) AS \`K%\`, SUM(bs1.EV * bs1.BBE) / SUM(bs1.BBE) AS EV, MAX(bs1.maxEV) AS maxEV,
-                                                SUM(bs1.Barrels) / SUM(bs1.PA) AS \`Barrels/PA\`, SUM(bs1.BA * bs1.AB) / SUM(bs1.AB) AS BA,
-                                                SUM(bs1.xBA * bs1.AB) / SUM(bs1.AB) AS xBA, SUM(bs1.BABIP * bs1.BBE) / SUM(bs1.BBE) AS BABIP,
-                                                SUM((bs1.xBA * bs1.AB - bs1.HR) / (bs1.AB - bs1.HR - bs1.K + bs1.SF) * bs1.BBE) / SUM(bs1.BBE) AS xBABIP,
-                                                SUM(bs1.OBP * bs1.PA) / SUM(bs1.PA) AS OBP, SUM(bs1.xBA * bs1.AB + bs1.BB + bs1.HBP) / SUM(bs1.PA) AS xOBP,
-                                                SUM(bs1.SLG * bs1.AB) / SUM(bs1.AB) AS SLG, SUM(bs1.xSLG * bs1.AB) / SUM(bs1.AB) AS xSLG,
-                                                SUM(bs1.ISO * bs1.AB) / SUM(bs1.AB) AS ISO, SUM((bs1.xSLG - bs1.xBA) * bs1.AB) / SUM(bs1.AB) AS xISO,
-                                                SUM(bs1.wOBA * bs1.PA) / SUM(bs1.PA) AS wOBA, SUM(bs1.xwOBA * bs1.PA) / SUM(bs1.PA) AS xwOBA,
-                                                SUM((bs1.wOBA * bs1.PA - CASE WHEN bs1.Season = 2015 THEN 0.687
-                                                                            WHEN bs1.Season = 2016 THEN 0.691
-                                                                            WHEN bs1.Season = 2017 THEN 0.693
-                                                                            WHEN bs1.Season IN (2018, 2019) THEN 0.690
-                                                                            WHEN bs1.Season = 2020 THEN 0.699
-                                                                            WHEN bs1.Season = 2021 THEN 0.692
-                                                                            WHEN bs1.Season = 2022 THEN 0.689 END * (bs1.BB - bs1.IBB) -
-                                                    CASE WHEN bs1.Season = 2015 THEN 0.718
-                                                        WHEN bs1.Season = 2016 THEN 0.721
-                                                        WHEN bs1.Season = 2017 THEN 0.723
-                                                        WHEN bs1.Season IN (2018, 2022) THEN 0.72
-                                                        WHEN bs1.Season = 2019 THEN 0.719
-                                                        WHEN bs1.Season = 2020 THEN 0.728
-                                                        WHEN bs1.Season = 2021 THEN 0.722 END * bs1.HBP) * bs1.BBE) / SUM(bs1.BBE) AS wOBAcon,
-                                                SUM(bs1.xwOBAcon * bs1.BBE) / SUM(bs1.BBE) AS xwOBACon, SUM(bs1.\`wRC+\` * bs1.PA) / SUM(bs1.PA) AS \`wRC+\`,
-                                                SUM(bs1.WAR) AS WAR
-                                        FROM bs1
-                                        JOIN cnt
-                                        ON bs1.PlayerID = cnt.PlayerID AND bs1.Season = cnt.Season
-                                        GROUP BY bs1.PlayerID, bs1.Season, bs1.Age) AS bs2
-                                    JOIN Players AS p
-                                    ON bs2.PlayerID = p.ID
-                                    LEFT JOIN bs3
-                                    ON bs2.PlayerID = bs3.PlayerID AND bs2.\`Season(s)\` = bs3.Season AND bs2.\`Team(s)\` = 1
-                                    WHERE bs2.PA >= ${pa_threshold}
-                                    ORDER BY bs2.WAR DESC, SUBSTRING_INDEX(p.Name, ' ', -1), SUBSTRING_INDEX(p.Name, ' ', 1)
-                                    LIMIT ${pagesize} OFFSET ${(page - 1) * pagesize};`,
+                                  SELECT p.Name, bs2.\`Season(s)\`, bs2.\`Age(s)\`, COALESCE(bs3.Team, bs2.\`Team(s)\`) AS \`Team(s)\`,
+                                         CONCAT(ROUND(PERCENT_RANK() OVER (PARTITION BY bs2.\`Season(s)\` ORDER BY bs2.G) * 100, 1), '%') AS G,
+                                         CONCAT(ROUND(PERCENT_RANK() OVER (PARTITION BY bs2.\`Season(s)\` ORDER BY bs2.PA) * 100, 1), '%') AS PA,
+                                         CONCAT(ROUND(PERCENT_RANK() OVER (PARTITION BY bs2.\`Season(s)\` ORDER BY bs2.BBE) * 100, 1), '%') AS BBE,
+                                         CONCAT(ROUND(PERCENT_RANK() OVER (PARTITION BY bs2.\`Season(s)\` ORDER BY bs2.\`BB%\`) * 100, 1), '%') AS \`BB%\`,
+                                         CONCAT(ROUND(PERCENT_RANK() OVER (PARTITION BY bs2.\`Season(s)\` ORDER BY bs2.\`K%\`) * 100, 1), '%') AS \`K%\`,
+                                         CONCAT(ROUND(PERCENT_RANK() OVER (PARTITION BY bs2.\`Season(s)\` ORDER BY bs2.EV) * 100, 1), '%') AS EV,
+                                         CONCAT(ROUND(PERCENT_RANK() OVER (PARTITION BY bs2.\`Season(s)\` ORDER BY bs2.\`Barrels/PA\`) * 100, 1), '%') AS \`Barrels/PA\`,
+                                         CONCAT(ROUND(PERCENT_RANK() OVER (PARTITION BY bs2.\`Season(s)\` ORDER BY bs2.BA) * 100, 1), '%') AS BA,
+                                         CONCAT(ROUND(PERCENT_RANK() OVER (PARTITION BY bs2.\`Season(s)\` ORDER BY bs2.xBA) * 100, 1), '%') AS xBA,
+                                         CONCAT(ROUND(PERCENT_RANK() OVER (PARTITION BY bs2.\`Season(s)\` ORDER BY bs2.BABIP) * 100, 1), '%') AS BABIP,
+                                         CONCAT(ROUND(PERCENT_RANK() OVER (PARTITION BY bs2.\`Season(s)\` ORDER BY bs2.xBABIP) * 100, 1), '%') AS xBABIP,
+                                         CONCAT(ROUND(PERCENT_RANK() OVER (PARTITION BY bs2.\`Season(s)\` ORDER BY bs2.OBP) * 100, 1), '%') AS OBP,
+                                         CONCAT(ROUND(PERCENT_RANK() OVER (PARTITION BY bs2.\`Season(s)\` ORDER BY bs2.xOBP) * 100, 1), '%') AS xOBP,
+                                         CONCAT(ROUND(PERCENT_RANK() OVER (PARTITION BY bs2.\`Season(s)\` ORDER BY bs2.SLG) * 100, 1), '%') AS SLG,
+                                         CONCAT(ROUND(PERCENT_RANK() OVER (PARTITION BY bs2.\`Season(s)\` ORDER BY bs2.xSLG) * 100, 1), '%') AS xSLG,
+                                         CONCAT(ROUND(PERCENT_RANK() OVER (PARTITION BY bs2.\`Season(s)\` ORDER BY bs2.ISO) * 100, 1), '%') AS ISO,
+                                         CONCAT(ROUND(PERCENT_RANK() OVER (PARTITION BY bs2.\`Season(s)\` ORDER BY bs2.xISO) * 100, 1), '%') AS xISO,
+                                         CONCAT(ROUND(PERCENT_RANK() OVER (PARTITION BY bs2.\`Season(s)\` ORDER BY bs2.wOBA) * 100, 1), '%') AS wOBA,
+                                         CONCAT(ROUND(PERCENT_RANK() OVER (PARTITION BY bs2.\`Season(s)\` ORDER BY bs2.xwOBA) * 100, 1), '%') AS xwOBA,
+                                         CONCAT(ROUND(PERCENT_RANK() OVER (PARTITION BY bs2.\`Season(s)\` ORDER BY bs2.wOBA) * 100, 1), '%') AS wOBA,
+                                         CONCAT(ROUND(PERCENT_RANK() OVER (PARTITION BY bs2.\`Season(s)\` ORDER BY bs2.xwOBAcon) * 100, 1), '%') AS xwOBAcon,
+                                         CONCAT(ROUND(PERCENT_RANK() OVER (PARTITION BY bs2.\`Season(s)\` ORDER BY bs2.\`wRC+\`) * 100, 1), '%') AS \`wRC+\`,
+                                         CONCAT(ROUND(PERCENT_RANK() OVER (PARTITION BY bs2.\`Season(s)\` ORDER BY bs2.WAR) * 100, 1), '%') AS WAR
+                                  FROM (SELECT bs1.PlayerID, bs1.Season AS \`Season(s)\`, bs1.Age AS \`Age(s)\`, cnt.NumTeams AS \`Team(s)\`, SUM(bs1.G) AS G,
+                                               SUM(bs1.PA) AS PA, SUM(bs1.BBE) AS BBE, SUM(bs1.BB) / SUM(bs1.PA) AS \`BB%\`,
+                                               SUM(bs1.K) / SUM(bs1.PA) AS \`K%\`, SUM(bs1.EV * bs1.BBE) / SUM(bs1.BBE) AS EV, MAX(bs1.maxEV) AS maxEV,
+                                               SUM(bs1.Barrels) / SUM(bs1.PA) AS \`Barrels/PA\`, SUM(bs1.BA * bs1.AB) / SUM(bs1.AB) AS BA,
+                                               SUM(bs1.xBA * bs1.AB) / SUM(bs1.AB) AS xBA, SUM(bs1.BABIP * bs1.BBE) / SUM(bs1.BBE) AS BABIP,
+                                               SUM((bs1.xBA * bs1.AB - bs1.HR) / (bs1.AB - bs1.HR - bs1.K + bs1.SF) * bs1.BBE) / SUM(bs1.BBE) AS xBABIP,
+                                               SUM(bs1.OBP * bs1.PA) / SUM(bs1.PA) AS OBP, SUM(bs1.xBA * bs1.AB + bs1.BB + bs1.HBP) / SUM(bs1.PA) AS xOBP,
+                                               SUM(bs1.SLG * bs1.AB) / SUM(bs1.AB) AS SLG, SUM(bs1.xSLG * bs1.AB) / SUM(bs1.AB) AS xSLG,
+                                               SUM(bs1.ISO * bs1.AB) / SUM(bs1.AB) AS ISO, SUM((bs1.xSLG - bs1.xBA) * bs1.AB) / SUM(bs1.AB) AS xISO,
+                                               SUM(bs1.wOBA * bs1.PA) / SUM(bs1.PA) AS wOBA, SUM(bs1.xwOBA * bs1.PA) / SUM(bs1.PA) AS xwOBA,
+                                               SUM((bs1.wOBA * bs1.PA - CASE WHEN bs1.Season = 2015 THEN 0.687
+                                                                             WHEN bs1.Season = 2016 THEN 0.691
+                                                                             WHEN bs1.Season = 2017 THEN 0.693
+                                                                             WHEN bs1.Season IN (2018, 2019) THEN 0.690
+                                                                             WHEN bs1.Season = 2020 THEN 0.699
+                                                                             WHEN bs1.Season = 2021 THEN 0.692
+                                                                             WHEN bs1.Season = 2022 THEN 0.689 END * (bs1.BB - bs1.IBB) - CASE WHEN bs1.Season = 2015 THEN 0.718
+                                                                                                                                               WHEN bs1.Season = 2016 THEN 0.721
+                                                                                                                                               WHEN bs1.Season = 2017 THEN 0.723
+                                                                                                                                               WHEN bs1.Season IN (2018, 2022) THEN 0.72
+                                                                                                                                               WHEN bs1.Season = 2019 THEN 0.719
+                                                                                                                                               WHEN bs1.Season = 2020 THEN 0.728
+                                                                                                                                               WHEN bs1.Season = 2021 THEN 0.722 END * bs1.HBP) * bs1.BBE) / SUM(bs1.BBE) AS wOBAcon,
+                                               SUM(bs1.xwOBAcon * bs1.BBE) / SUM(bs1.BBE) AS xwOBACon, SUM(bs1.\`wRC+\` * bs1.PA) / SUM(bs1.PA) AS \`wRC+\`, SUM(bs1.WAR) AS WAR
+                                       FROM bs1
+                                       JOIN cnt
+                                       ON bs1.PlayerID = cnt.PlayerID AND bs1.Season = cnt.Season
+                                       GROUP BY bs1.PlayerID, bs1.Season, bs1.Age) AS bs2
+                                  JOIN Players AS p
+                                  ON bs2.PlayerID = p.ID
+                                  LEFT JOIN bs3
+                                  ON bs2.PlayerID = bs3.PlayerID AND bs2.\`Season(s)\` = bs3.Season AND bs2.\`Team(s)\` = 1
+                                  WHERE bs2.PA >= ${pa_threshold}
+                                  ORDER BY bs2.WAR DESC, SUBSTRING_INDEX(p.Name, ' ', -1), SUBSTRING_INDEX(p.Name, ' ', 1)
+                                  LIMIT ${pagesize} OFFSET ${(page - 1) * pagesize};`,
                          function (error, results, fields) {
                             if (error) {
                                 console.log(error)
@@ -241,62 +221,61 @@ async function players_batting_bs(req, res) {
                          });
             } else {
                 connection.query(`WITH bs1 AS (SELECT PlayerID, Season, Age, G, AB, PA, BBE, HR, K, BB, IBB, HBP, SF, EV, maxEV, Barrels, BA, xBA, BABIP,
-                                                        OBP, SLG, xSLG, ISO, wOBA, xwOBA, xwOBAcon, \`wRC+\`, WAR
-                                                FROM BattingStats
-                                                WHERE Season IN (${seasons.join(', ')}) AND Team IN ('${teams.join("', '")}')),
-                                        cnt AS (SELECT PlayerID, Season, COUNT(*) AS NumTeams
-                                                FROM BattingStats
-                                                WHERE Season IN (${seasons.join(', ')}) AND Team IN ('${teams.join("', '")}')
-                                                GROUP BY PlayerID, Season),
-                                        bs3 AS (SELECT PlayerID, Season, Team
-                                                FROM BattingStats
-                                                WHERE Season IN (${seasons.join(', ')}) AND Team IN ('${teams.join("', '")}'))
+                                                      OBP, SLG, xSLG, ISO, wOBA, xwOBA, xwOBAcon, \`wRC+\`, WAR
+                                               FROM BattingStats
+                                               WHERE Season IN (${seasons.join(', ')}) AND Team IN ('${teams.join("', '")}')),
+                                       cnt AS (SELECT PlayerID, Season, COUNT(*) AS NumTeams
+                                               FROM BattingStats
+                                               WHERE Season IN (${seasons.join(', ')}) AND Team IN ('${teams.join("', '")}')
+                                               GROUP BY PlayerID, Season),
+                                       bs3 AS (SELECT PlayerID, Season, Team
+                                               FROM BattingStats
+                                               WHERE Season IN (${seasons.join(', ')}) AND Team IN ('${teams.join("', '")}'))
 
-                                                    SELECT p.Name, bs2.\`Season(s)\`, bs2.\`Age(s)\`, COALESCE(bs3.Team, bs2.\`Team(s)\`) AS \`Team(s)\`, bs2.G, bs2.PA, bs2.BBE,
-                                        CONCAT(ROUND(bs2.\`BB%\` * 100, 1), '%') AS \`BB%\`, CONCAT(ROUND(bs2.\`K%\` * 100, 1), '%') AS \`K%\`,
-                                        ROUND(bs2.EV, 1) AS EV, ROUND(bs2.maxEV, 1) AS maxEV,
-                                        CONCAT(ROUND(bs2.\`Barrels/PA\` * 100, 1), '%') AS \`Barrels/PA\`, ROUND(bs2.BA, 3) AS BA, ROUND(bs2.xBA, 3) AS xBA,
-                                        ROUND(bs2.BABIP, 3) AS BABIP, ROUND(bs2.xBABIP, 3) AS xBABIP, ROUND(bs2.OBP, 3) AS OBP,
-                                        ROUND(bs2.xOBP, 3) AS xOBP, ROUND(bs2.SLG, 3) AS SLG, ROUND(bs2.xSLG, 3) AS xSLG, ROUND(bs2.ISO, 3) AS ISO,
-                                        ROUND(bs2.xISO, 3) AS xISO, ROUND(bs2.wOBA, 3) AS wOBA, ROUND(bs2.xwOBA, 3) AS xwOBA,
-                                        ROUND(bs2.woBACon, 3) AS wOBAcon, ROUND(bs2.xwOBAcon, 3) AS xwOBAcon, ROUND(bs2.\`wRC+\`) AS \`wRC+\`, bs2.WAR
-                                    FROM (SELECT bs1.PlayerID, bs1.Season AS \`Season(s)\`, bs1.Age AS \`Age(s)\`, cnt.NumTeams AS \`Team(s)\`, SUM(bs1.G) AS G,
-                                                SUM(bs1.PA) AS PA, SUM(bs1.BBE) AS BBE, SUM(bs1.BB) / SUM(bs1.PA) AS \`BB%\`,
-                                                SUM(bs1.K) / SUM(bs1.PA) AS \`K%\`, SUM(bs1.EV * bs1.BBE) / SUM(bs1.BBE) AS EV, MAX(bs1.maxEV) AS maxEV,
-                                                SUM(bs1.Barrels) / SUM(bs1.PA) AS \`Barrels/PA\`, SUM(bs1.BA * bs1.AB) / SUM(bs1.AB) AS BA,
-                                                SUM(bs1.xBA * bs1.AB) / SUM(bs1.AB) AS xBA, SUM(bs1.BABIP * bs1.BBE) / SUM(bs1.BBE) AS BABIP,
-                                                SUM((bs1.xBA * bs1.AB - bs1.HR) / (bs1.AB - bs1.HR - bs1.K + bs1.SF) * bs1.BBE) / SUM(bs1.BBE) AS xBABIP,
-                                                SUM(bs1.OBP * bs1.PA) / SUM(bs1.PA) AS OBP, SUM(bs1.xBA * bs1.AB + bs1.BB + bs1.HBP) / SUM(bs1.PA) AS xOBP,
-                                                SUM(bs1.SLG * bs1.AB) / SUM(bs1.AB) AS SLG, SUM(bs1.xSLG * bs1.AB) / SUM(bs1.AB) AS xSLG,
-                                                SUM(bs1.ISO * bs1.AB) / SUM(bs1.AB) AS ISO, SUM((bs1.xSLG - bs1.xBA) * bs1.AB) / SUM(bs1.AB) AS xISO,
-                                                SUM(bs1.wOBA * bs1.PA) / SUM(bs1.PA) AS wOBA, SUM(bs1.xwOBA * bs1.PA) / SUM(bs1.PA) AS xwOBA,
-                                                SUM((bs1.wOBA * bs1.PA - CASE WHEN bs1.Season = 2015 THEN 0.687
-                                                                            WHEN bs1.Season = 2016 THEN 0.691
-                                                                            WHEN bs1.Season = 2017 THEN 0.693
-                                                                            WHEN bs1.Season IN (2018, 2019) THEN 0.690
-                                                                            WHEN bs1.Season = 2020 THEN 0.699
-                                                                            WHEN bs1.Season = 2021 THEN 0.692
-                                                                            WHEN bs1.Season = 2022 THEN 0.689 END * (bs1.BB - bs1.IBB) -
-                                                    CASE WHEN bs1.Season = 2015 THEN 0.718
-                                                        WHEN bs1.Season = 2016 THEN 0.721
-                                                        WHEN bs1.Season = 2017 THEN 0.723
-                                                        WHEN bs1.Season IN (2018, 2022) THEN 0.72
-                                                        WHEN bs1.Season = 2019 THEN 0.719
-                                                        WHEN bs1.Season = 2020 THEN 0.728
-                                                        WHEN bs1.Season = 2021 THEN 0.722 END * bs1.HBP) * bs1.BBE) / SUM(bs1.BBE) AS wOBAcon,
-                                                SUM(bs1.xwOBAcon * bs1.BBE) / SUM(bs1.BBE) AS xwOBACon, SUM(bs1.\`wRC+\` * bs1.PA) / SUM(bs1.PA) AS \`wRC+\`,
-                                                SUM(bs1.WAR) AS WAR
-                                        FROM bs1
-                                        JOIN cnt
-                                        ON bs1.PlayerID = cnt.PlayerID AND bs1.Season = cnt.Season
-                                        GROUP BY bs1.PlayerID, bs1.Season, bs1.Age) AS bs2
-                                    JOIN Players AS p
-                                    ON bs2.PlayerID = p.ID
-                                    LEFT JOIN bs3
-                                    ON bs2.PlayerID = bs3.PlayerID AND bs2.\`Season(s)\` = bs3.Season AND bs2.\`Team(s)\` = 1
-                                    WHERE bs2.PA >= ${pa_threshold}
-                                    ORDER BY bs2.WAR DESC, SUBSTRING_INDEX(p.Name, ' ', -1), SUBSTRING_INDEX(p.Name, ' ', 1)
-                                    LIMIT ${pagesize} OFFSET ${(page - 1) * pagesize};`,
+                                  SELECT p.Name, bs2.\`Season(s)\`, bs2.\`Age(s)\`, COALESCE(bs3.Team, bs2.\`Team(s)\`) AS \`Team(s)\`, bs2.G, bs2.PA, bs2.BBE,
+                                         CONCAT(ROUND(bs2.\`BB%\` * 100, 1), '%') AS \`BB%\`, CONCAT(ROUND(bs2.\`K%\` * 100, 1), '%') AS \`K%\`,
+                                         ROUND(bs2.EV, 1) AS EV, ROUND(bs2.maxEV, 1) AS maxEV,
+                                         CONCAT(ROUND(bs2.\`Barrels/PA\` * 100, 1), '%') AS \`Barrels/PA\`, ROUND(bs2.BA, 3) AS BA, ROUND(bs2.xBA, 3) AS xBA,
+                                         ROUND(bs2.BABIP, 3) AS BABIP, ROUND(bs2.xBABIP, 3) AS xBABIP, ROUND(bs2.OBP, 3) AS OBP,
+                                         ROUND(bs2.xOBP, 3) AS xOBP, ROUND(bs2.SLG, 3) AS SLG, ROUND(bs2.xSLG, 3) AS xSLG, ROUND(bs2.ISO, 3) AS ISO,
+                                         ROUND(bs2.xISO, 3) AS xISO, ROUND(bs2.wOBA, 3) AS wOBA, ROUND(bs2.xwOBA, 3) AS xwOBA,
+                                         ROUND(bs2.woBACon, 3) AS wOBAcon, ROUND(bs2.xwOBAcon, 3) AS xwOBAcon, ROUND(bs2.\`wRC+\`) AS \`wRC+\`, bs2.WAR
+                                  FROM (SELECT bs1.PlayerID, bs1.Season AS \`Season(s)\`, bs1.Age AS \`Age(s)\`, cnt.NumTeams AS \`Team(s)\`, SUM(bs1.G) AS G,
+                                               SUM(bs1.PA) AS PA, SUM(bs1.BBE) AS BBE, SUM(bs1.BB) / SUM(bs1.PA) AS \`BB%\`,
+                                               SUM(bs1.K) / SUM(bs1.PA) AS \`K%\`, SUM(bs1.EV * bs1.BBE) / SUM(bs1.BBE) AS EV, MAX(bs1.maxEV) AS maxEV,
+                                               SUM(bs1.Barrels) / SUM(bs1.PA) AS \`Barrels/PA\`, SUM(bs1.BA * bs1.AB) / SUM(bs1.AB) AS BA,
+                                               SUM(bs1.xBA * bs1.AB) / SUM(bs1.AB) AS xBA, SUM(bs1.BABIP * bs1.BBE) / SUM(bs1.BBE) AS BABIP,
+                                               SUM((bs1.xBA * bs1.AB - bs1.HR) / (bs1.AB - bs1.HR - bs1.K + bs1.SF) * bs1.BBE) / SUM(bs1.BBE) AS xBABIP,
+                                               SUM(bs1.OBP * bs1.PA) / SUM(bs1.PA) AS OBP, SUM(bs1.xBA * bs1.AB + bs1.BB + bs1.HBP) / SUM(bs1.PA) AS xOBP,
+                                               SUM(bs1.SLG * bs1.AB) / SUM(bs1.AB) AS SLG, SUM(bs1.xSLG * bs1.AB) / SUM(bs1.AB) AS xSLG,
+                                               SUM(bs1.ISO * bs1.AB) / SUM(bs1.AB) AS ISO, SUM((bs1.xSLG - bs1.xBA) * bs1.AB) / SUM(bs1.AB) AS xISO,
+                                               SUM(bs1.wOBA * bs1.PA) / SUM(bs1.PA) AS wOBA, SUM(bs1.xwOBA * bs1.PA) / SUM(bs1.PA) AS xwOBA,
+                                               SUM((bs1.wOBA * bs1.PA - CASE WHEN bs1.Season = 2015 THEN 0.687
+                                                                             WHEN bs1.Season = 2016 THEN 0.691
+                                                                             WHEN bs1.Season = 2017 THEN 0.693
+                                                                             WHEN bs1.Season IN (2018, 2019) THEN 0.690
+                                                                             WHEN bs1.Season = 2020 THEN 0.699
+                                                                             WHEN bs1.Season = 2021 THEN 0.692
+                                                                             WHEN bs1.Season = 2022 THEN 0.689 END * (bs1.BB - bs1.IBB) - CASE WHEN bs1.Season = 2015 THEN 0.718
+                                                                                                                                               WHEN bs1.Season = 2016 THEN 0.721
+                                                                                                                                               WHEN bs1.Season = 2017 THEN 0.723
+                                                                                                                                               WHEN bs1.Season IN (2018, 2022) THEN 0.72
+                                                                                                                                               WHEN bs1.Season = 2019 THEN 0.719
+                                                                                                                                               WHEN bs1.Season = 2020 THEN 0.728
+                                                                                                                                               WHEN bs1.Season = 2021 THEN 0.722 END * bs1.HBP) * bs1.BBE) / SUM(bs1.BBE) AS wOBAcon,
+                                               SUM(bs1.xwOBAcon * bs1.BBE) / SUM(bs1.BBE) AS xwOBACon, SUM(bs1.\`wRC+\` * bs1.PA) / SUM(bs1.PA) AS \`wRC+\`,
+                                               SUM(bs1.WAR) AS WAR
+                                       FROM bs1
+                                       JOIN cnt
+                                       ON bs1.PlayerID = cnt.PlayerID AND bs1.Season = cnt.Season
+                                       GROUP BY bs1.PlayerID, bs1.Season, bs1.Age) AS bs2
+                                  JOIN Players AS p
+                                  ON bs2.PlayerID = p.ID
+                                  LEFT JOIN bs3
+                                  ON bs2.PlayerID = bs3.PlayerID AND bs2.\`Season(s)\` = bs3.Season AND bs2.\`Team(s)\` = 1
+                                  WHERE bs2.PA >= ${pa_threshold}
+                                  ORDER BY bs2.WAR DESC, SUBSTRING_INDEX(p.Name, ' ', -1), SUBSTRING_INDEX(p.Name, ' ', 1)
+                                  LIMIT ${pagesize} OFFSET ${(page - 1) * pagesize};`,
                                 function (error, results, fields) {
                                     if (error) {
                                         console.log(error)
