@@ -5,7 +5,7 @@ import {
     Nav,
     NavItem,
     NavLink
-  } from "shards-react";
+  } from 'shards-react';
 
 class MenuBar extends React.Component {
     render() {
