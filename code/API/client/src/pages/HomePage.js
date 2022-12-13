@@ -18,34 +18,23 @@ class HomePage extends React.Component {
       <div>
         <MenuBar />
         <div style={{ width: '70vw', margin: '0 auto', marginTop: '5vh' }}>
-          <h3>Welcome!</h3>
-          <h3>This is the platform for looking up baseball players stats!</h3>
+          <h3>Welcome to BSGraphs, your premier source for statistical BS!</h3>
+          <h3>Our platform aggregates and expands upon various advanced baseball metrics provided by Baseball Savant and FanGraphs to provide users with a comprehensive search tool for baseball inquiry and analysis. </h3>
         </div>
         <div style={{ width: '70vw', margin: '0 auto', marginTop: '5vh' }}>
-          <h3>Guide</h3>
+          <h3>Facets and Features</h3>
           <h6>
-            Searching up PA Threshold
+            Filtering Results on Plate Appearances or Total Batters Faced
           </h6>
           <p>
-          You will see a PA Threshold search bar in Players Batting page. PA stands for Plate Appearance for batting. Normally,
-          starter players would gain 3 ~ 5 PA per game. If you enter 100 as the PA Threshold,
-          it would return players who have at least 100 batting appearance.
+          Above the Players Batting leaderboard, you will see a plate appearance (PA) threshold form, which allows you to filter leaderboard results on PA count. A player is credited with a PA each time he completes a turn batting. In a typical, nine-inning game, a batter will record between three and five PAs, and around 500 PAs in a full, 162-game season. If you enter 500 as the PA threshold,
+          only results with at least 500 PAs will be shown in the batting results table. The pitching equivalent of PA is total batters faced (TBF); starting pitchers usually face around 650 batters in a full season. The TBF threshold form at the top of the pitching leaderboard provides the same functionality as the PA threshold form.
           </p>
           <h6>
-            Searching up TBF Threshold
+            Splitting Results on Season or Team
           </h6>
           <p>
-          You will see a TBF Threshold search bar in Players Pitching page. TBF stands for Total Batters Faced, which is the number of Batters
-          who made a plate appearance before the pitcher in a season. 
-          </p>
-          <h6>
-            Split Seasons & Teams
-          </h6>
-          <p>
-            Many players play for different teams at different seasons. You can search players by either
-            combining all seasons together (unchecking `Split Seasons` checkbox), or by splitting players'
-            stat by seasons. Similarly, you can search players stats by each team, or by combining all of the player's
-            stat by checking/unchecking `Split Teams` checkbox.
+            By default, each result displayed in the leaderboard corresponds to a player's single-season statistics. Unchecking the `Split Seasons` checkbox aggregates player records into a single, inter-season result. Similarly, you can aggregate players statistics by team by checking/unchecking the `Split Teams` checkbox.
           </p>
         </div>
         <div style={{ width: '70vw', margin: '0 auto', marginTop: '5vh' }}>
