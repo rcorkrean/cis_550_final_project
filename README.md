@@ -18,3 +18,21 @@ A baseball API that aggregates and curates statistics from **Baseball Savant** a
 
 **writeups**: Contains the project proposal (milestone 1), the project outline (milestone 2), and the file containing a list of 10 SQL queries and instructions for accessing the database (milestone 3).
 
+
+## Installation
+
+Run the following commands to start up both the client and the backend server.
+
+In the client directory, run
+
+```
+npm start
+```
+
+In the server directory,
+
+run
+
+```
+npm start
+```

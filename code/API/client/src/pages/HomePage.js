@@ -55,9 +55,13 @@ class HomePage extends React.Component {
           <p>
             EV represents the speed of the baseball as it comes off the bat, immediately after a batter makes contact. maxEV is the maximum value recorded.
           </p>
-          <h6>Barrels/PA & BA & xBA</h6>
+          <h6>Barrels/PA</h6>
           <p>
-            BA (barrels) is a ball that is hit with an EV of at least 98 mph. Barrels/PA is the number of barrels divided by the number of plate appearances. xBA is the expected value of BA.
+            Barrels is a ball that is hit with an EV of at least 98 mph.
+          </p>
+          <h6>BA</h6>
+          <p>
+            BA stands for batting average, which is the batter's hits divided by their total at-bats.
           </p>
           <h6>BABIP & xBABIP</h6>
           <p>
